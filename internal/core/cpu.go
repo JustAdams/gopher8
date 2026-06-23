@@ -61,7 +61,6 @@ func (cpu *CPU) Cycle() {
 }
 
 func (cpu *CPU) LoadBytes(loadPos uint16, payload []uint8) {
-	fmt.Printf("Loading at pos %d", loadPos)
 	copy(cpu.ram[loadPos:loadPos+uint16(len(payload))], payload[:])
 }
 
@@ -83,6 +82,15 @@ func (cpu *CPU) execute(opcode *OpCode) {
 	case 0x7:
 		cpu.opAdd(opcode.X, opcode.NN)
 		cpu.pc += 2
+	case 0x8:
+		switch opcode.N {
+		case 0x0:
+			cpu.opSetVxVy(opcode.X, opcode.Y)
+			cpu.pc += 2
+		case 0x1:
+			cpu.opOr(opcode.X, opcode.Y)
+			cpu.pc += 2
+		}
 	case 0xA:
 		cpu.opSetIndex(opcode.NNN)
 		cpu.pc += 2
@@ -116,6 +124,16 @@ func (cpu *CPU) opSet(x, nn uint8) {
 // 0x7XNN - add nn to vx
 func (cpu *CPU) opAdd(x, nn uint8) {
 	cpu.v[x] += nn
+}
+
+// 0x8XY0 - set vx to the value of vy
+func (cpu *CPU) opSetVxVy(x, y uint8) {
+	cpu.v[x] = cpu.v[y]
+}
+
+// 0x8XY1 - set vx to OR of vx and vy
+func (cpu *CPU) opOr(x, y uint8) {
+	cpu.v[x] |= cpu.v[y]
 }
 
 // 0xANNN - set index register to nnn
