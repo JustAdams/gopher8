@@ -53,6 +53,7 @@ func (cpu *CPU) Cycle() {
 	// fetch instruction
 	var instruction uint16 = uint16(cpu.ram[cpu.pc]) << 8
 	instruction |= uint16(cpu.ram[cpu.pc+1])
+	cpu.pc += 2
 
 	opCode := NewOpCode(instruction)
 
@@ -76,27 +77,33 @@ func (cpu *CPU) execute(opcode *OpCode) {
 		}
 	case 0x1:
 		cpu.opJump(opcode.NNN)
+	case 0x3:
+		cpu.opSkipVxNN(opcode.X, opcode.NN)
+	case 0x5:
+		cpu.opSkipVxEqualVy(opcode.X, opcode.Y)
 	case 0x6:
 		cpu.opSet(opcode.X, opcode.NN)
-		cpu.pc += 2
 	case 0x7:
 		cpu.opAdd(opcode.X, opcode.NN)
-		cpu.pc += 2
 	case 0x8:
 		switch opcode.N {
 		case 0x0:
 			cpu.opSetVxVy(opcode.X, opcode.Y)
-			cpu.pc += 2
 		case 0x1:
 			cpu.opOr(opcode.X, opcode.Y)
-			cpu.pc += 2
+		case 0x2:
+			cpu.opAnd(opcode.X, opcode.Y)
+		case 0x3:
+			cpu.opXor(opcode.X, opcode.Y)
+		case 0x4:
+			cpu.opAddVxVy(opcode.X, opcode.Y)
 		}
+	case 0x9:
+		cpu.opSkipVxNotEqualVy(opcode.X, opcode.Y)
 	case 0xA:
 		cpu.opSetIndex(opcode.NNN)
-		cpu.pc += 2
 	case 0xD:
 		cpu.opDraw(opcode.X, opcode.Y, opcode.N)
-		cpu.pc += 2
 	default:
 		fmt.Printf("Unable to find opcode %d", opcode)
 	}
@@ -114,6 +121,27 @@ func (cpu *CPU) opClear() {
 // 0x1NNN - jumps pc to pos.
 func (cpu *CPU) opJump(pos uint16) {
 	cpu.pc = pos
+}
+
+// 0x3XNN - skip if vX equals NN
+func (cpu *CPU) opSkipVxNN(x, nn uint8) {
+	if cpu.v[x] == nn {
+		cpu.pc += 2
+	}
+}
+
+// 0x4XNN - skip if vX doesnt equals NN
+func (cpu *CPU) opNotSkipVxNN(x, nn uint8) {
+	if cpu.v[x] != nn {
+		cpu.pc += 2
+	}
+}
+
+// 0x5XY0 - skip if values in vX and vY are equal
+func (cpu *CPU) opSkipVxEqualVy(x, y uint8) {
+	if cpu.v[x] == cpu.v[y] {
+		cpu.pc += 2
+	}
 }
 
 // 0x6XNN - set register vx
@@ -134,6 +162,29 @@ func (cpu *CPU) opSetVxVy(x, y uint8) {
 // 0x8XY1 - set vx to OR of vx and vy
 func (cpu *CPU) opOr(x, y uint8) {
 	cpu.v[x] |= cpu.v[y]
+}
+
+// 0x8XY2 - set vx to AND of vx and vy
+func (cpu *CPU) opAnd(x, y uint8) {
+	cpu.v[x] &= cpu.v[y]
+}
+
+// 0x8XY3 - set vx to XOR of vx and vy
+func (cpu *CPU) opXor(x, y uint8) {
+	cpu.v[x] ^= cpu.v[y]
+}
+
+// 0x8XY4 - adds vy to vx
+func (cpu *CPU) opAddVxVy(x, y uint8) {
+	cpu.v[x] += cpu.v[y]
+	// todo: finish overflow logic
+}
+
+// 0x9XY0 - skip if values in vX and vY are not equal
+func (cpu *CPU) opSkipVxNotEqualVy(x, y uint8) {
+	if cpu.v[x] != cpu.v[y] {
+		cpu.pc += 2
+	}
 }
 
 // 0xANNN - set index register to nnn
