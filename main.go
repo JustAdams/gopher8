@@ -13,7 +13,62 @@ type Game struct {
 	cpu core.CPU
 }
 
+// ebitengine method which attempts to run at 60Hz
 func (g *Game) Update() error {
+
+	// user input
+	g.cpu.SetCurrentKey(core.NoInput)
+	if ebiten.IsKeyPressed(ebiten.Key1) {
+		g.cpu.SetCurrentKey(0x1)
+	}
+	if ebiten.IsKeyPressed(ebiten.Key2) {
+		g.cpu.SetCurrentKey(0x2)
+	}
+	if ebiten.IsKeyPressed(ebiten.Key3) {
+		g.cpu.SetCurrentKey(0x3)
+	}
+	if ebiten.IsKeyPressed(ebiten.Key4) {
+		g.cpu.SetCurrentKey(0xC)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyQ) {
+		g.cpu.SetCurrentKey(0x4)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		g.cpu.SetCurrentKey(0x5)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyE) {
+		g.cpu.SetCurrentKey(0x6)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyR) {
+		g.cpu.SetCurrentKey(0xD)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		g.cpu.SetCurrentKey(0x7)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		g.cpu.SetCurrentKey(0x8)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		g.cpu.SetCurrentKey(0x9)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyF) {
+		g.cpu.SetCurrentKey(0xE)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyZ) {
+		g.cpu.SetCurrentKey(0xA)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyX) {
+		g.cpu.SetCurrentKey(0x0)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyC) {
+		g.cpu.SetCurrentKey(0xB)
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyV) {
+		g.cpu.SetCurrentKey(0xF)
+	}
+
+	// delay timer is reduced at a rate of 60Hz until it reaches zero
+	g.cpu.ReduceDelay()
 	g.cpu.Cycle()
 	return nil
 }
@@ -21,7 +76,8 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	for r := range core.Height {
 		for c := range core.Width {
-			if g.cpu.Display[r][c] == true {
+			idx := r*core.Width + c
+			if g.cpu.Display[idx] == true {
 				screen.Set(c, r, color.White)
 			} else {
 				screen.Set(c, r, color.Black)
@@ -48,7 +104,8 @@ func main() {
 		cpu: *cpu,
 	}
 
-	ebiten.SetWindowSize(core.Width*10, core.Height*10)
+	// scales the game to fit this resolution
+	ebiten.SetWindowSize(640, 320)
 	ebiten.SetWindowTitle("Gopher8")
 
 	if err := ebiten.RunGame(game); err != nil {
