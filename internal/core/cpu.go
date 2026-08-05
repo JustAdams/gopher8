@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math/rand/v2"
 )
 
 const FontStart = 0x50
@@ -32,15 +33,16 @@ var font = [80]uint8{
 }
 
 type CPU struct {
-	ram     [4096]uint8
-	v       [16]uint8
-	idxReg  uint16
-	pc      uint16
-	sp      uint16
-	delay   uint8
-	sound   uint8
-	currKey uint8
-	Display [Height * Width]bool
+	ram       [4096]uint8
+	v         [16]uint8
+	idxReg    uint16
+	pc        uint16
+	sp        uint16
+	callStack stack
+	delay     uint8
+	sound     uint8
+	currKey   uint8
+	Display   [Height * Width]bool
 }
 
 func NewCPU() *CPU {
@@ -86,16 +88,23 @@ func (cpu *CPU) LoadBytes(loadPos uint16, payload []uint8) {
 // Performs action based on the provided opcode.
 func (cpu *CPU) execute(opcode *OpCode) {
 
+	fmt.Printf("OP: 0x%04X\n", opcode.NNNN)
 	switch opcode.W {
 	case 0x0:
 		switch opcode.NNN {
 		case 0x0E0:
 			cpu.op0x00E0()
+		case 0x0EE:
+			cpu.op0x00EE()
 		}
 	case 0x1:
 		cpu.op0x1NNN(opcode.NNN)
+	case 0x2:
+		cpu.op0x2NNN(opcode.NNN)
 	case 0x3:
 		cpu.op0x3XNN(opcode.X, opcode.NN)
+	case 0x4:
+		cpu.op0x4XNN(opcode.X, opcode.NN)
 	case 0x5:
 		cpu.op0x5XY0(opcode.X, opcode.Y)
 	case 0x6:
@@ -114,17 +123,38 @@ func (cpu *CPU) execute(opcode *OpCode) {
 			cpu.op0x8XY3(opcode.X, opcode.Y)
 		case 0x4:
 			cpu.op0x8XY4(opcode.X, opcode.Y)
+		case 0x5:
+			cpu.op0x8XY5(opcode.X, opcode.Y)
+		case 0x6:
+			cpu.op0x8XY6(opcode.X, opcode.Y)
+		case 0x7:
+			cpu.op0x8XY7(opcode.X, opcode.Y)
+		case 0xE:
+			cpu.op0x8XYE(opcode.X, opcode.Y)
 		}
 	case 0x9:
 		cpu.op0x9XY0(opcode.X, opcode.Y)
 	case 0xA:
 		cpu.op0xANNN(opcode.NNN)
+	case 0xB:
+		cpu.op0xBXNN(opcode.X, opcode.NNN)
+	case 0xC:
+		cpu.op0xCXNN(opcode.X, opcode.NN)
 	case 0xD:
 		cpu.op0xDXYN(opcode.X, opcode.Y, opcode.N)
+	case 0xE:
+		switch opcode.NN {
+		case 0x9E:
+			cpu.op0xEX9E(opcode.X)
+		case 0xA1:
+			cpu.op0xEXA1(opcode.X)
+		}
 	case 0xF:
 		switch opcode.NN {
 		case 0x07:
 			cpu.op0xF07(opcode.X)
+		case 0x0A:
+			cpu.op0xFX0A(opcode.X)
 		case 0x15:
 			cpu.op0xF15(opcode.X)
 		case 0x18:
@@ -145,9 +175,21 @@ func (cpu *CPU) op0x00E0() {
 	}
 }
 
-// 0x1NNN - jumps pc to pos.
+// 0x00EE - returns from subroutine
+func (cpu *CPU) op0x00EE() {
+	cpu.pc = cpu.callStack.pop()
+}
+
+// 0x1NNN - jumps pc to pos
 func (cpu *CPU) op0x1NNN(pos uint16) {
 	cpu.pc = pos
+}
+
+// 0x2NNN - calls subroutine at memory location NNN
+func (cpu *CPU) op0x2NNN(nnn uint16) {
+	// push PC to the stack first so it can be resumed after subroutine completes
+	cpu.callStack.push(cpu.pc)
+	cpu.pc = nnn
 }
 
 // 0x3XNN - skip if vX equals NN
@@ -207,6 +249,38 @@ func (cpu *CPU) op0x8XY4(x, y uint8) {
 	// todo: finish overflow logic
 }
 
+// 0x8XY5 - sets vx to the result of vx - vy
+func (cpu *CPU) op0x8XY5(x, y uint8) {
+	if cpu.v[x] >= cpu.v[y] {
+		cpu.v[0xF] = 1
+	} else {
+		cpu.v[0xF] = 0
+	}
+	cpu.v[x] -= cpu.v[y]
+}
+
+// 0x8XY6 - sets vx equal to vy and shifts vx one bit to the right
+func (cpu *CPU) op0x8XY6(x, y uint8) {
+	cpu.v[0xF] = cpu.v[y] & 1
+	cpu.v[x] = cpu.v[y] >> 1
+}
+
+// 0x8XY7 - sets vx to the result of vy - vx
+func (cpu *CPU) op0x8XY7(x, y uint8) {
+	if cpu.v[y] >= cpu.v[x] {
+		cpu.v[0xF] = 1
+	} else {
+		cpu.v[0xF] = 0
+	}
+	cpu.v[x] = cpu.v[y] - cpu.v[x]
+}
+
+// 0x8XYE - sets vx equal to vy and shifts vx one bit to the left
+func (cpu *CPU) op0x8XYE(x, y uint8) {
+	cpu.v[0xF] = cpu.v[y] & 1
+	cpu.v[x] = cpu.v[y] << 1
+}
+
 // 0x9XY0 - skip if values in vX and vY are not equal
 func (cpu *CPU) op0x9XY0(x, y uint8) {
 	if cpu.v[x] != cpu.v[y] {
@@ -217,6 +291,18 @@ func (cpu *CPU) op0x9XY0(x, y uint8) {
 // 0xANNN - set index register to nnn
 func (cpu *CPU) op0xANNN(nnn uint16) {
 	cpu.idxReg = nnn
+}
+
+// 0xBXNN - jump to address xnn plus the value in vx
+func (cpu *CPU) op0xBXNN(x uint8, nnn uint16) {
+	nextPos := nnn + uint16(cpu.v[x])
+	cpu.pc = nextPos
+}
+
+// 0xCXNN - generate random number and sets to vx
+func (cpu *CPU) op0xCXNN(x, nn uint8) {
+	num := uint8(rand.IntN(int(nn))) & nn
+	cpu.v[x] = num
 }
 
 // 0xDXYN - draws to the display.
@@ -253,6 +339,20 @@ func (cpu *CPU) op0xDXYN(x, y, n uint8) {
 			}
 			cpu.Display[idx] = !cpu.Display[idx]
 		}
+	}
+}
+
+// 0xEX9E - skip if vx equals current key
+func (cpu *CPU) op0xEX9E(x uint8) {
+	if cpu.v[x] == cpu.currKey {
+		cpu.pc += 2
+	}
+}
+
+// 0xEXA1 - skip if vx doesnt equals current key
+func (cpu *CPU) op0xEXA1(x uint8) {
+	if cpu.v[x] != cpu.currKey {
+		cpu.pc += 2
 	}
 }
 

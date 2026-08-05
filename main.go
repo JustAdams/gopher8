@@ -17,54 +17,40 @@ type Game struct {
 func (g *Game) Update() error {
 
 	// user input
-	g.cpu.SetCurrentKey(core.NoInput)
 	if ebiten.IsKeyPressed(ebiten.Key1) {
 		g.cpu.SetCurrentKey(0x1)
-	}
-	if ebiten.IsKeyPressed(ebiten.Key2) {
+	} else if ebiten.IsKeyPressed(ebiten.Key2) {
 		g.cpu.SetCurrentKey(0x2)
-	}
-	if ebiten.IsKeyPressed(ebiten.Key3) {
+	} else if ebiten.IsKeyPressed(ebiten.Key3) {
 		g.cpu.SetCurrentKey(0x3)
-	}
-	if ebiten.IsKeyPressed(ebiten.Key4) {
+	} else if ebiten.IsKeyPressed(ebiten.Key4) {
 		g.cpu.SetCurrentKey(0xC)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyQ) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyQ) {
 		g.cpu.SetCurrentKey(0x4)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyW) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyW) {
 		g.cpu.SetCurrentKey(0x5)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyE) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyE) {
 		g.cpu.SetCurrentKey(0x6)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyR) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyR) {
 		g.cpu.SetCurrentKey(0xD)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyA) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.cpu.SetCurrentKey(0x7)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyS) {
 		g.cpu.SetCurrentKey(0x8)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyD) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
 		g.cpu.SetCurrentKey(0x9)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyF) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyF) {
 		g.cpu.SetCurrentKey(0xE)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyZ) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyZ) {
 		g.cpu.SetCurrentKey(0xA)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyX) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyX) {
 		g.cpu.SetCurrentKey(0x0)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyC) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyC) {
 		g.cpu.SetCurrentKey(0xB)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyV) {
+	} else if ebiten.IsKeyPressed(ebiten.KeyV) {
 		g.cpu.SetCurrentKey(0xF)
+	} else {
+		g.cpu.SetCurrentKey(core.NoInput)
 	}
 
 	// delay timer is reduced at a rate of 60Hz until it reaches zero
