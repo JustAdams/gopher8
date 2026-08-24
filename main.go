@@ -1,12 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"gopher8/internal/core"
 	"image/color"
 	"log"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+)
+
+const (
+	windowWidth  = 640
+	windowHeight = 320
+
+	chip8Width  = 64
+	chip8Height = 32
 )
 
 type Game struct {
@@ -77,11 +85,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
-	fmt.Println("Go Chip8")
+	// read rom from input otherwise default to test
+	romPath := "roms/test_opcode.ch8"
+	if len(os.Args) > 1 {
+		romPath = "roms/" + os.Args[len(os.Args)-1] + ".ch8"
+	}
 
-	rom, err := core.CreateROM("roms/test_opcode.ch8")
+	rom, err := core.CreateROM(romPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s", "Cannot find "+romPath)
 	}
 	cpu := core.NewCPU()
 	cpu.LoadBytes(core.RomStart, rom.Data[:])
@@ -91,7 +103,7 @@ func main() {
 	}
 
 	// scales the game to fit this resolution
-	ebiten.SetWindowSize(640, 320)
+	ebiten.SetWindowSize(windowWidth, windowHeight)
 	ebiten.SetWindowTitle("Gopher8")
 
 	if err := ebiten.RunGame(game); err != nil {

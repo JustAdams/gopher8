@@ -159,6 +159,8 @@ func (cpu *CPU) execute(opcode *OpCode) {
 			cpu.op0xF15(opcode.X)
 		case 0x18:
 			cpu.op0xF18(opcode.X)
+		case 0x55:
+			cpu.op0xFX55(opcode.X)
 		}
 	default:
 		fmt.Printf("Unable to find opcode %d", opcode)
@@ -378,4 +380,14 @@ func (cpu *CPU) op0xF15(x uint8) {
 // 0xFX18 - sets the sound timer to the value at vx
 func (cpu *CPU) op0xF18(x uint8) {
 	cpu.sound = cpu.v[x]
+}
+
+// 0xFX55 - store
+func (cpu *CPU) op0xFX55(x uint8) {
+	// value of each variable register from v0 to vx is stored in successive memory addresses
+	vIdx := 0
+	for i := cpu.ram[cpu.idxReg]; i <= cpu.ram[cpu.idxReg]+x; i++ {
+		cpu.ram[i] = cpu.v[vIdx]
+		vIdx++
+	}
 }
