@@ -59,3 +59,22 @@ func Test_0x8XYE(t *testing.T) {
 		t.Errorf(`VX should be %d after bit-shift right but was %d`, actualVX, expectedVX)
 	}
 }
+
+func TestCPU_op0xFX33(t *testing.T) {
+	payload := []uint8{0xF1, 0x33}
+	cpu := NewCPU()
+	cpu.LoadBytes(cpu.pc, payload)
+	cpu.v[1] = 123
+
+	cpu.Cycle()
+
+	if cpu.ram[cpu.idxReg] != 0x1 {
+		t.Errorf(`Address I should contain %d but was %d`, 1, cpu.ram[cpu.idxReg])
+	}
+	if cpu.ram[cpu.idxReg+1] != 0x2 {
+		t.Errorf(`Address I should contain %d but was %d`, 2, cpu.ram[cpu.idxReg])
+	}
+	if cpu.ram[cpu.idxReg+2] != 0x3 {
+		t.Errorf(`Address I should contain %d but was %d`, 3, cpu.ram[cpu.idxReg])
+	}
+}
