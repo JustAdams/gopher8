@@ -13,10 +13,10 @@ type ROM struct {
 }
 
 // Creates a ROM from a .ch8 file.
-func CreateROM(path string) (*ROM, error) {
-	file, err := os.Open(path)
+func CreateROM(romPath string) (*ROM, error) {
+	file, err := os.Open(romPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s", "Cannot find "+romPath)
 	}
 	defer file.Close()
 

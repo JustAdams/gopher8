@@ -159,6 +159,8 @@ func (cpu *CPU) execute(opcode *OpCode) {
 			cpu.op0xF15(opcode.X)
 		case 0x18:
 			cpu.op0xF18(opcode.X)
+		case 0x33:
+			cpu.op0xFX33(opcode.X)
 		case 0x55:
 			cpu.op0xFX55(opcode.X)
 		}
@@ -380,6 +382,16 @@ func (cpu *CPU) op0xF15(x uint8) {
 // 0xFX18 - sets the sound timer to the value at vx
 func (cpu *CPU) op0xF18(x uint8) {
 	cpu.sound = cpu.v[x]
+}
+
+// 0xFX33 - binary-coded decimal conversion
+func (cpu *CPU) op0xFX33(x uint8) {
+	// split vx into three digits
+	val := cpu.v[x]
+	for i := 2; i >= 0; i-- {
+		cpu.ram[cpu.idxReg+uint16(i)] = val % 10
+		val /= 10
+	}
 }
 
 // 0xFX55 - store
