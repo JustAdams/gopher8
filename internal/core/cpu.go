@@ -163,6 +163,8 @@ func (cpu *CPU) execute(opcode *OpCode) {
 			cpu.op0xFX33(opcode.X)
 		case 0x55:
 			cpu.op0xFX55(opcode.X)
+		case 0x65:
+			cpu.op0xFX65(opcode.X)
 		}
 	default:
 		fmt.Printf("Unable to find opcode %d", opcode)
@@ -398,8 +400,18 @@ func (cpu *CPU) op0xFX33(x uint8) {
 func (cpu *CPU) op0xFX55(x uint8) {
 	// value of each variable register from v0 to vx is stored in successive memory addresses
 	vIdx := 0
-	for i := cpu.ram[cpu.idxReg]; i <= cpu.ram[cpu.idxReg]+x; i++ {
-		cpu.ram[i] = cpu.v[vIdx]
+	for i := uint8(0); i <= x; i++ {
+		cpu.ram[cpu.idxReg+uint16(i)] = cpu.v[vIdx]
+		vIdx++
+	}
+}
+
+// 0xFX65 - load
+func (cpu *CPU) op0xFX65(x uint8) {
+	// value of each memory address from idx to idx + x is stored in in variable memory starting a 0
+	vIdx := 0
+	for i := uint8(0); i <= x; i++ {
+		cpu.v[vIdx] = cpu.ram[cpu.idxReg+uint16(i)]
 		vIdx++
 	}
 }
