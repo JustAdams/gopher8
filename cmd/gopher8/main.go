@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	windowWidth  = 640 + 320
+	windowWidth  = 640
 	windowHeight = 320
 
 	chip8Width  = 64
