@@ -1,35 +1,30 @@
 package core
 
 import (
+	"fmt"
+	"io"
 	"log"
-	"os"
 )
 
 const MaxROMSize uint16 = 3584
 
 type ROM struct {
 	Size uint16 // size of the ROM not to exceed MaxROMSize
-	Data [MaxROMSize]uint8
+	Data [MaxROMSize]byte
 }
 
 // Creates a ROM from a .ch8 file.
-func CreateROM(romPath string) (*ROM, error) {
-	file, err := os.Open(romPath)
-	if err != nil {
-		log.Fatalf("%s", "Cannot find "+romPath)
-	}
-	defer file.Close()
-
+func CreateROM(romReader io.Reader) (*ROM, error) {
 	rom := &ROM{}
 
-	size, err := file.Read(rom.Data[:])
-	if err != nil {
-		log.Fatal(err)
+	romLen, err := io.ReadFull(romReader, rom.Data[:])
+	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+		return nil, fmt.Errorf("failed to read rom")
 	}
-	if size > int(MaxROMSize) {
+	if romLen > int(MaxROMSize) {
 		log.Fatal("Invalid ROM size provided")
 	}
-	rom.Size = uint16(size)
+	rom.Size = uint16(romLen)
 
 	return rom, nil
 }

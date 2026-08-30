@@ -36,10 +36,13 @@ func main() {
 }
 
 func NewGame(romPath string) *gui.Game {
-	rom, err := core.CreateROM(romPath)
+	romFile, err := os.Open(romPath)
 	if err != nil {
-		log.Fatalf("%s", "Error loading "+romPath)
+		log.Fatalf("%s", "Error reading "+romPath)
 	}
+	defer romFile.Close()
+
+	rom, err := core.CreateROM(romFile)
 	cpu := core.NewCPU()
 	cpu.LoadBytes(core.RomStart, rom.Data[:])
 
