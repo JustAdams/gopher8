@@ -56,7 +56,7 @@ func NewCPU() *CPU {
 	return &cpu
 }
 
-// reduces the delay timer by 1 to a minimum of 0
+// ReduceDelay reduces the delay timer by 1 to a minimum of 0
 func (cpu *CPU) ReduceDelay() {
 	if cpu.delay > 0 {
 		cpu.delay--
@@ -65,10 +65,10 @@ func (cpu *CPU) ReduceDelay() {
 	if cpu.sound > 0 {
 		cpu.sound--
 		if cpu.sound == 0 {
-			// stop sound
+			// play sound
 		}
 	} else {
-		// play sound
+		// stop sound
 	}
 }
 
@@ -78,7 +78,7 @@ func (cpu *CPU) SetCurrentKey(key uint8) {
 
 func (cpu *CPU) Cycle() {
 	// fetch instruction
-	var instruction uint16 = uint16(cpu.ram[cpu.pc]) << 8
+	instruction := uint16(cpu.ram[cpu.pc]) << 8
 	instruction |= uint16(cpu.ram[cpu.pc+1])
 	cpu.pc += 2
 
@@ -94,8 +94,6 @@ func (cpu *CPU) LoadBytes(loadPos uint16, payload []uint8) {
 
 // Performs action based on the provided opcode.
 func (cpu *CPU) execute(opcode *OpCode) {
-
-	fmt.Printf("OP: 0x%04X\n", opcode.NNNN)
 	switch opcode.W {
 	case 0x0:
 		switch opcode.NNN {
@@ -166,6 +164,10 @@ func (cpu *CPU) execute(opcode *OpCode) {
 			cpu.op0xF15(opcode.X)
 		case 0x18:
 			cpu.op0xF18(opcode.X)
+		case 0x1E:
+			cpu.op0xF1E(opcode.X)
+		case 0x29:
+			cpu.op0xF29(opcode.X)
 		case 0x33:
 			cpu.op0xFX33(opcode.X)
 		case 0x55:
@@ -182,7 +184,7 @@ func (cpu *CPU) execute(opcode *OpCode) {
 func (cpu *CPU) op0x00E0() {
 	for r := range Height {
 		for c := range Width {
-			idx := r*Height + c
+			idx := r*Width + c
 			cpu.Display[idx] = false
 		}
 	}
@@ -295,8 +297,9 @@ func (cpu *CPU) op0x8XY7(x, y uint8) {
 
 // 0x8XYE - sets vx equal to vy and shifts vx one bit to the left
 func (cpu *CPU) op0x8XYE(x, y uint8) {
-	cpu.v[0xF] = cpu.v[y] & 1
+	msb := (cpu.v[y] & 0x80) >> 7
 	cpu.v[x] = cpu.v[y] << 1
+	cpu.v[0xF] = msb
 }
 
 // 0x9XY0 - skip if values in vX and vY are not equal
@@ -398,6 +401,16 @@ func (cpu *CPU) op0xF15(x uint8) {
 // 0xFX18 - sets the sound timer to the value at vx
 func (cpu *CPU) op0xF18(x uint8) {
 	cpu.sound = cpu.v[x]
+}
+
+// 0xFX1E
+func (cpu *CPU) op0xF1E(x uint8) {
+	cpu.idxReg += uint16(cpu.v[x])
+}
+
+// 0xFX29 - sets idx register to address of the hexdecimal character in vx
+func (cpu *CPU) op0xF29(x uint8) {
+	cpu.idxReg = uint16(FontStart + (cpu.v[x] * 5))
 }
 
 // 0xFX33 - binary-coded decimal conversion

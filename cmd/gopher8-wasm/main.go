@@ -14,9 +14,6 @@ import (
 const (
 	windowWidth  = 640
 	windowHeight = 320
-
-	chip8Width  = 64
-	chip8Height = 32
 )
 
 func main() {
