@@ -11,15 +11,18 @@ type Game struct {
 	CPU *core.CPU
 }
 
-// ebitengine method which attempts to run at 60Hz
 func (g *Game) Update() error {
 
-	// user input
+	// user input at this frame
 	handleInput(g)
 
-	// delay timer is reduced at a rate of 60Hz until it reaches zero
+	// run ~600 cycles
+	for i := 0; i < 10; i++ {
+		g.CPU.Cycle()
+	}
+
+	// reduce delay timer by 60Hz
 	g.CPU.ReduceDelay()
-	g.CPU.Cycle()
 	return nil
 }
 

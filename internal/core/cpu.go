@@ -58,10 +58,17 @@ func NewCPU() *CPU {
 
 // reduces the delay timer by 1 to a minimum of 0
 func (cpu *CPU) ReduceDelay() {
-	if cpu.delay == 0 {
-		cpu.delay = 0
+	if cpu.delay > 0 {
+		cpu.delay--
+	}
+
+	if cpu.sound > 0 {
+		cpu.sound--
+		if cpu.sound == 0 {
+			// stop sound
+		}
 	} else {
-		cpu.delay -= 1
+		// play sound
 	}
 }
 
@@ -137,7 +144,7 @@ func (cpu *CPU) execute(opcode *OpCode) {
 	case 0xA:
 		cpu.op0xANNN(opcode.NNN)
 	case 0xB:
-		cpu.op0xBXNN(opcode.X, opcode.NNN)
+		cpu.op0xBXNN(opcode.NNN)
 	case 0xC:
 		cpu.op0xCXNN(opcode.X, opcode.NN)
 	case 0xD:
@@ -251,8 +258,13 @@ func (cpu *CPU) op0x8XY3(x, y uint8) {
 
 // 0x8XY4 - adds vy to vx
 func (cpu *CPU) op0x8XY4(x, y uint8) {
-	cpu.v[x] += cpu.v[y]
-	// todo: finish overflow logic
+	sum := uint16(cpu.v[x] + cpu.v[y])
+	if sum > 0xFF {
+		cpu.v[0xF] = 1
+	} else {
+		cpu.v[0xF] = 0
+	}
+	cpu.v[x] = uint8(sum)
 }
 
 // 0x8XY5 - sets vx to the result of vx - vy
@@ -300,50 +312,52 @@ func (cpu *CPU) op0xANNN(nnn uint16) {
 }
 
 // 0xBXNN - jump to address xnn plus the value in vx
-func (cpu *CPU) op0xBXNN(x uint8, nnn uint16) {
-	nextPos := nnn + uint16(cpu.v[x])
+func (cpu *CPU) op0xBXNN(nnn uint16) {
+	nextPos := nnn + uint16(cpu.v[0])
 	cpu.pc = nextPos
 }
 
 // 0xCXNN - generate random number and sets to vx
 func (cpu *CPU) op0xCXNN(x, nn uint8) {
-	num := uint8(rand.IntN(int(nn))) & nn
+	num := uint8(rand.UintN(256)) & nn
 	cpu.v[x] = num
 }
 
 // 0xDXYN - draws to the display.
 func (cpu *CPU) op0xDXYN(x, y, n uint8) {
-	// starting coordinates from top-left of sprite
-	xCoord := cpu.v[x]
-	yCoord := cpu.v[y]
+	// get x and y coordinates from var registers
+	xCoord := cpu.v[x] % Width
+	yCoord := cpu.v[y] % Height
+	cpu.v[0xF] = 0
 
-	for r := range n {
-		// get the nth byte of sprite data from memory address at idxReg
-		spriteData := cpu.ram[cpu.idxReg+uint16(r)]
-		yPos := (yCoord + r) & (Height - 1)
+	for row := uint8(0); row < n; row++ {
+		yPos := yCoord + row
+		// stop if the end of display is reached
 		if yPos >= Height {
 			break
 		}
 
-		// for each of the 8 bits in the sprite row
-		for c := range 8 {
-			spritePixel := (spriteData>>(7-c))&0x1 == 1
-			if !spritePixel {
-				continue
-			}
+		spriteByte := cpu.ram[cpu.idxReg+uint16(row)]
 
-			xPos := xCoord + uint8(c)
+		// for each of the 8 bits in the row
+		for col := uint8(0); col < 8; col++ {
+			xPos := xCoord + col
+			// stop if end of display is reached
 			if xPos >= Width {
 				break
 			}
 
-			idx := (uint16(yPos) * Width) + uint16(xPos)
+			if (spriteByte & (0x80 >> col)) != 0 {
+				pos := uint16(yPos)*uint16(Width) + uint16(xPos)
 
-			currPixel := cpu.Display[idx]
-			if currPixel {
-				cpu.v[0xF] = 0x1
+				if cpu.Display[pos] {
+					cpu.Display[pos] = false
+					cpu.v[0xF] = 1
+				} else {
+					cpu.Display[pos] = true
+				}
 			}
-			cpu.Display[idx] = !cpu.Display[idx]
+
 		}
 	}
 }

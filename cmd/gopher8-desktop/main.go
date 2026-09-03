@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"gopher8/internal/core"
 	"gopher8/internal/gui"
 	"log"
@@ -36,6 +37,7 @@ func main() {
 }
 
 func NewGame(romPath string) *gui.Game {
+
 	romFile, err := os.Open(romPath)
 	if err != nil {
 		log.Fatalf("%s", "Error reading "+romPath)
@@ -43,11 +45,15 @@ func NewGame(romPath string) *gui.Game {
 	defer romFile.Close()
 
 	rom, err := core.CreateROM(romFile)
+	if err != nil {
+		log.Fatalf("%s", "Error creating "+romPath)
+	}
 	cpu := core.NewCPU()
 	cpu.LoadBytes(core.RomStart, rom.Data[:])
 
 	game := &gui.Game{
 		CPU: cpu,
 	}
+
 	return game
 }
