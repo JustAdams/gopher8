@@ -1,3 +1,4 @@
 gopher8.exe
 wasm_exec.js
 gopher8.wasm
+.idea/*
