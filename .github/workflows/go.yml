@@ -40,13 +40,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy Assets to Bucket Root
+      - name: Deploy WASM Assets to S3 chip8 Folder
         run: |
-          # Copy files into bucket root WITHOUT --delete (preserves external bucket contents)
-          aws s3 cp dist/chip8.html s3://${{ secrets.S3_BUCKET_NAME }}/chip8.html
-          aws s3 cp dist/wasm_exec.js s3://${{ secrets.S3_BUCKET_NAME }}/wasm_exec.js
-
-          # Copy WASM binary with explicit application/wasm header
-          aws s3 cp dist/gopher8.wasm s3://${{ secrets.S3_BUCKET_NAME }}/gopher8.wasm \
+          # 1. Sync wasm_exec.js and gopher8.wasm directly to s3://bucket/chip8/
+          # --delete only cleans up files INSIDE the /chip8/ directory, leaving root files safe
+          aws s3 sync dist/chip8/ s3://${{ secrets.S3_BUCKET_NAME }}/chip8/ --delete
+            
+          # 2. Re-upload binary with explicit application/wasm MIME type
+          aws s3 cp dist/chip8/gopher8.wasm s3://${{ secrets.S3_BUCKET_NAME }}/chip8/gopher8.wasm \
             --content-type "application/wasm" \
             --metadata-directive REPLACE

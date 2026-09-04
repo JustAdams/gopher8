@@ -18,7 +18,7 @@ const (
 
 func main() {
 	// read rom from input otherwise default to test
-	romPath := "test_opcode.ch8"
+	romPath := "outlaw.ch8"
 	if len(os.Args) > 1 {
 		romPath = os.Args[len(os.Args)-1] + ".ch8"
 	}
