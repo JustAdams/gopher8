@@ -34,7 +34,7 @@ func main() {
 	}
 }
 
-//go:embed test_opcode.ch8
+//go:embed outlaw.ch8
 var defaultROM []byte
 
 func NewGame(romPath string) *gui.Game {
