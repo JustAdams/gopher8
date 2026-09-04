@@ -27,7 +27,7 @@ jobs:
       - name: Stage Static Assets
         run: |
           # 1. Copy chip8.html into dist/
-          cp chip8.html dist/chip8.html
+          cp ./chip8.html dist/chip8.html
           
           # 2. Safely extract matching wasm_exec.js from Go toolchain
           REAL_GOROOT=$(go env GOTOOLDIR | sed 's|/pkg/tool/.*||')
