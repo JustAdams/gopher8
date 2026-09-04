@@ -1,40 +1,37 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Gopher8 deploy to S3
+name: Gopher8 deploy to S3 Root
 
 on:
   push:
     branches: [ "master" ]
 
 jobs:
-
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-  
+
       - name: Build WebAssembly
         env:
           GOOS: js
           GOARCH: wasm
         run: |
-          mkdir -p dist/chip8
-          go build -o chip8/gopher8.wasm ./cmd/gopher8-wasm
+          mkdir -p dist
+          go build -o dist/gopher8.wasm ./cmd/gopher8-wasm
 
-      - name: Prepare WASM JS Bridge
+      - name: Stage Static Assets
         run: |
-          mkdir -p dist/chip8
-            
-          # Fetch matching wasm_exec.js using exact tag from `go version`
-          GO_TAG=$(go version | awk '{print $3}')
-          curl -sSLf "https://raw.githubusercontent.com/golang/go/refs/tags/${GO_TAG}/misc/wasm/wasm_exec.js" -o dist/chip8/wasm_exec.js
+          # 1. Copy chip8.html into dist/
+          cp chip8.html dist/chip8.html
+          
+          # 2. Safely extract matching wasm_exec.js from Go toolchain
+          REAL_GOROOT=$(go env GOTOOLDIR | sed 's|/pkg/tool/.*||')
+          cp "$REAL_GOROOT/misc/wasm/wasm_exec.js" dist/wasm_exec.js
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -43,11 +40,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy WASM to S3
+      - name: Deploy Assets to Bucket Root
         run: |
-          # --delete will remove outdated files in /chip8
-          aws s3 sync dist/chip8 s3://${{ secrets.S3_BUCKET_NAME }}/chip8/ --delete
+          # Copy files into bucket root WITHOUT --delete (preserves external bucket contents)
+          aws s3 cp dist/chip8.html s3://${{ secrets.S3_BUCKET_NAME }}/chip8.html
+          aws s3 cp dist/wasm_exec.js s3://${{ secrets.S3_BUCKET_NAME }}/wasm_exec.js
 
-          aws s3 cp dist/chip8/gopher8.wasm s3://${{ secrets.S3_BUCKET_NAME }}/chip8/gopher8.wasm \
-          --content-type "application/wasm" \
-          --metadata-directive REPLACE
+          # Copy WASM binary with explicit application/wasm header
+          aws s3 cp dist/gopher8.wasm s3://${{ secrets.S3_BUCKET_NAME }}/gopher8.wasm \
+            --content-type "application/wasm" \
+            --metadata-directive REPLACE
