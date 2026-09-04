@@ -26,21 +26,20 @@ jobs:
 
       - name: Stage Static Assets
         run: |
-          # 1. Create target output directory
           mkdir -p dist/chip8
-  
-          # 2. Extract real GOROOT from compiler binaries path
-          REAL_GOROOT=$(go env GOTOOLDIR | sed 's|/pkg/tool/.*||')
-  
-          # 3. Copy wasm_exec.js or fallback to curl if running out of module cache
-          if [ -f "$REAL_GOROOT/misc/wasm/wasm_exec.js" ]; then
-            cp "$REAL_GOROOT/misc/wasm/wasm_exec.js" dist/chip8/wasm_exec.js
+
+          # Locate wasm_exec.js from the active Go toolchain installation
+          WASM_EXEC_PATH=$(find "$(go env GOTOOLDIR)/../../.." "$(go env GOROOT)" -name "wasm_exec.js" 2>/dev/null | head -n 1)
+          
+          if [ -n "$WASM_EXEC_PATH" ] && [ -f "$WASM_EXEC_PATH" ]; then
+            echo "Found wasm_exec.js at: $WASM_EXEC_PATH"
+            cp "$WASM_EXEC_PATH" dist/chip8/wasm_exec.js
           else
-            GO_VER=$(go version | awk '{print $3}')
-            curl -sSLf "https://raw.githubusercontent.com/golang/go/${GO_VER}/misc/wasm/wasm_exec.js" -o dist/chip8/wasm_exec.js
+            echo "Error: Could not locate wasm_exec.js in Go installation"
+            exit 1
           fi
-  
-          # 4. Copy chip8.html into dist/chip8/ if it exists locally
+          
+          # Copy chip8.html if present
           if [ -f "chip8.html" ]; then
             cp chip8.html dist/chip8/chip8.html
           fi
@@ -56,7 +55,7 @@ jobs:
         run: |
           # Sync dist/chip8/ contents to s3://bucket/chip8/
           aws s3 sync dist/chip8/ s3://${{ secrets.S3_BUCKET_NAME }}/chip8/ --delete
-            
+          
           # Explicitly set correct Content-Type for WebAssembly execution
           aws s3 cp dist/chip8/gopher8.wasm s3://${{ secrets.S3_BUCKET_NAME }}/chip8/gopher8.wasm \
             --content-type "application/wasm" \
