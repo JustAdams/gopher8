@@ -26,21 +26,21 @@ jobs:
 
       - name: Stage Static Assets
         run: |
-        # 1. Create target output directory
+          # 1. Create target output directory
           mkdir -p dist/chip8
-
-        # 2. Extract real GOROOT from compiler binaries path
+  
+          # 2. Extract real GOROOT from compiler binaries path
           REAL_GOROOT=$(go env GOTOOLDIR | sed 's|/pkg/tool/.*||')
-
-        # 3. Copy wasm_exec.js or fallback to curl if running out of module cache
+  
+          # 3. Copy wasm_exec.js or fallback to curl if running out of module cache
           if [ -f "$REAL_GOROOT/misc/wasm/wasm_exec.js" ]; then
             cp "$REAL_GOROOT/misc/wasm/wasm_exec.js" dist/chip8/wasm_exec.js
           else
             GO_VER=$(go version | awk '{print $3}')
             curl -sSLf "https://raw.githubusercontent.com/golang/go/${GO_VER}/misc/wasm/wasm_exec.js" -o dist/chip8/wasm_exec.js
           fi
-
-        # 4. Copy chip8.html into dist/chip8/ if it exists locally
+  
+          # 4. Copy chip8.html into dist/chip8/ if it exists locally
           if [ -f "chip8.html" ]; then
             cp chip8.html dist/chip8/chip8.html
           fi
