@@ -11,8 +11,6 @@ const RomStart = 0x200
 const Height = 32
 const Width = 64
 
-const NoInput = 0xFF
-
 var font = [80]uint8{
 	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 	0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -41,8 +39,8 @@ type CPU struct {
 	callStack stack
 	delay     uint8
 	sound     uint8
-	currKey   uint8
 	Display   [Height * Width]bool
+	Keypad    [16]bool
 }
 
 func NewCPU() *CPU {
@@ -70,10 +68,6 @@ func (cpu *CPU) ReduceDelay() {
 	} else {
 		// stop sound
 	}
-}
-
-func (cpu *CPU) SetCurrentKey(key uint8) {
-	cpu.currKey = key
 }
 
 func (cpu *CPU) Cycle() {
@@ -367,14 +361,14 @@ func (cpu *CPU) op0xDXYN(x, y, n uint8) {
 
 // 0xEX9E - skip if vx equals current key
 func (cpu *CPU) op0xEX9E(x uint8) {
-	if cpu.v[x] == cpu.currKey {
+	if cpu.Keypad[cpu.v[x]] {
 		cpu.pc += 2
 	}
 }
 
 // 0xEXA1 - skip if vx doesnt equals current key
 func (cpu *CPU) op0xEXA1(x uint8) {
-	if cpu.v[x] != cpu.currKey {
+	if !cpu.Keypad[cpu.v[x]] {
 		cpu.pc += 2
 	}
 }
@@ -386,10 +380,17 @@ func (cpu *CPU) op0xF07(x uint8) {
 
 // 0xFX0A - waits for key input and stores it in vx
 func (cpu *CPU) op0xFX0A(x uint8) {
-	if cpu.currKey == NoInput {
+	keyPressed := false
+	for keyHex, isPressed := range cpu.Keypad {
+		if isPressed {
+			cpu.v[x] = byte(keyHex)
+			keyPressed = true
+			break
+		}
+	}
+
+	if !keyPressed {
 		cpu.pc -= 2
-	} else {
-		cpu.v[x] = cpu.currKey
 	}
 }
 
