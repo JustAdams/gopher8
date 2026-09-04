@@ -21,13 +21,11 @@ jobs:
           GOOS: js
           GOARCH: wasm
         run: |
-          mkdir -p dist
-          go build -o dist/gopher8.wasm ./cmd/gopher8-wasm
+          mkdir -p dist/chip8
+          go build -o dist/chip8/gopher8.wasm ./cmd/gopher8-wasm
 
       - name: Stage Static Assets
         run: |
-          mkdir -p dist/chip8
-
           # Locate wasm_exec.js from the active Go toolchain installation
           WASM_EXEC_PATH=$(find "$(go env GOTOOLDIR)/../../.." "$(go env GOROOT)" -name "wasm_exec.js" 2>/dev/null | head -n 1)
           
@@ -53,6 +51,12 @@ jobs:
 
       - name: Deploy WASM Assets to S3 chip8 Folder
         run: |
+          # Verify binary exists before attempting S3 operations
+          if [ ! -f "dist/chip8/gopher8.wasm" ]; then
+            echo "Error: dist/chip8/gopher8.wasm was not built!"
+            exit 1
+          fi
+          
           # Sync dist/chip8/ contents to s3://bucket/chip8/
           aws s3 sync dist/chip8/ s3://${{ secrets.S3_BUCKET_NAME }}/chip8/ --delete
           
