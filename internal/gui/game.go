@@ -26,41 +26,16 @@ func (g *Game) Update() error {
 	return nil
 }
 
+var keyMap = map[ebiten.Key]ebiten.Key{
+	ebiten.Key1: 0x1, ebiten.Key2: 0x2, ebiten.Key3: 0x3, ebiten.Key4: 0xC,
+	ebiten.KeyQ: 0x4, ebiten.KeyW: 0x5, ebiten.KeyE: 0x6, ebiten.KeyR: 0xD,
+	ebiten.KeyA: 0x7, ebiten.KeyS: 0x8, ebiten.KeyD: 0x9, ebiten.KeyF: 0xE,
+	ebiten.KeyZ: 0xA, ebiten.KeyX: 0x0, ebiten.KeyC: 0xB, ebiten.KeyV: 0xF,
+}
+
 func handleInput(g *Game) {
-	if ebiten.IsKeyPressed(ebiten.Key1) {
-		g.CPU.SetCurrentKey(0x1)
-	} else if ebiten.IsKeyPressed(ebiten.Key2) {
-		g.CPU.SetCurrentKey(0x2)
-	} else if ebiten.IsKeyPressed(ebiten.Key3) {
-		g.CPU.SetCurrentKey(0x3)
-	} else if ebiten.IsKeyPressed(ebiten.Key4) {
-		g.CPU.SetCurrentKey(0xC)
-	} else if ebiten.IsKeyPressed(ebiten.KeyQ) {
-		g.CPU.SetCurrentKey(0x4)
-	} else if ebiten.IsKeyPressed(ebiten.KeyW) {
-		g.CPU.SetCurrentKey(0x5)
-	} else if ebiten.IsKeyPressed(ebiten.KeyE) {
-		g.CPU.SetCurrentKey(0x6)
-	} else if ebiten.IsKeyPressed(ebiten.KeyR) {
-		g.CPU.SetCurrentKey(0xD)
-	} else if ebiten.IsKeyPressed(ebiten.KeyA) {
-		g.CPU.SetCurrentKey(0x7)
-	} else if ebiten.IsKeyPressed(ebiten.KeyS) {
-		g.CPU.SetCurrentKey(0x8)
-	} else if ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.CPU.SetCurrentKey(0x9)
-	} else if ebiten.IsKeyPressed(ebiten.KeyF) {
-		g.CPU.SetCurrentKey(0xE)
-	} else if ebiten.IsKeyPressed(ebiten.KeyZ) {
-		g.CPU.SetCurrentKey(0xA)
-	} else if ebiten.IsKeyPressed(ebiten.KeyX) {
-		g.CPU.SetCurrentKey(0x0)
-	} else if ebiten.IsKeyPressed(ebiten.KeyC) {
-		g.CPU.SetCurrentKey(0xB)
-	} else if ebiten.IsKeyPressed(ebiten.KeyV) {
-		g.CPU.SetCurrentKey(0xF)
-	} else {
-		g.CPU.SetCurrentKey(core.NoInput)
+	for ebitenKey, chip8Key := range keyMap {
+		g.CPU.Keypad[chip8Key] = ebiten.IsKeyPressed(ebitenKey)
 	}
 }
 
