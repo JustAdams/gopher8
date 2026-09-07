@@ -1,6 +1,6 @@
 # Go Chip-8 Emulator
 
-A Chi-p8 emulator written using Go and Ebitengine.
+A Chip-8 emulator written using Go and Ebitengine.
 
 ## Controls
 The top left of a QWERTY keyboard is used for this implementation. I make no guarantee that the key ordering will match the orderings that the author of any given ROM has intended but the majority of ROMs will likely match this.
